@@ -10,5 +10,5 @@ x,y,z = Obj.get_DataSet()
 print 
 ss = Obj.compute_patch(8,2,x[100][:])
 
-print ss
+print ss,x
 

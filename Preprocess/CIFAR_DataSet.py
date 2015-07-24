@@ -39,5 +39,5 @@ class CIFAR_DataSet(object):
         temp = (image_size * image_size) + patch
         temp = np.concatenate((temp,((image_size*image_size)+temp)))
         patch = np.concatenate( ( patch , temp) )
-        print patch
+        #print patch
         return patch

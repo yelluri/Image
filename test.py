@@ -12,3 +12,4 @@ ss = Obj.compute_patch(8,2,x[100][:])
 
 print ss,x
 
+#Nice

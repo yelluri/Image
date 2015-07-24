@@ -7,9 +7,6 @@ from math import floor
 size=(64,64,3)
 Obj = CIFAR.CIFAR_DataSet()
 x,y,z = Obj.get_DataSet()
-print 
-ss = Obj.compute_patch(8,2,x[100][:])
 
-print ss,x
-
-#Yes
+ss = Obj.compute_patch(8,4,x[100][:])
+print ss.shape

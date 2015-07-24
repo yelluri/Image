@@ -8,7 +8,7 @@ class CIFAR_DataSet(object):
         self.dataset_name = "CIFAR Dataset With 10 Classes"
     
     def get_DataSet(self):
-        fileObject = open("Datasets/CIFAR 10/cifar-10-batches-py/data_batch_1", 'rb')
+        fileObject = open("/home/vignesh/workspace/Kmeans/Datasets/CIFAR 10/cifar-10-batches-py/data_batch_1", 'rb')
         images = cPickle.load(fileObject)
         fileObject.close()
         #Converting Dictionary to Numpy array for ease in manipulation.

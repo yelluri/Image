@@ -24,3 +24,4 @@ print temp
 print t1
 tt=temp[:,row:(row+2),col:(col+2)].flatten()
 print tt,t1[tt]
+#cool stuff

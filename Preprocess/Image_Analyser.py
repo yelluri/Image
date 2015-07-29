@@ -5,10 +5,11 @@ Created on Jul 26, 2015
 '''
 import numpy as np
 from random import randint
-import logging
 import scipy.misc
 from Globals import *
 from math import floor
+import scipy.cluster
+from sklearn.decomposition import PCA
 class Image_Analyser(object):
 
 
@@ -21,7 +22,12 @@ class Image_Analyser(object):
         
         self.Image_size = IMAGE_SIZE
         self.Patch_size = PATCH_SIZE
+        self.num_of_rand_patches = NO_OF_RANDOM_PATCHES
+        self.KMeans = K_MEANS
         self.patch_set = np.empty((0,3*self.Patch_size*self.Patch_size),int)
+        self.col_wise_total = floor(self.Image_size/self.Patch_size)
+        self.row_wise_total = floor(self.Image_size/self.Patch_size)
+        self.total_possible_patches = int(self.col_wise_total * self.row_wise_total)
         
     def readImage(self, filename):
         Image = scipy.misc.imread(filename)
@@ -40,11 +46,40 @@ class Image_Analyser(object):
         return Image
         
     def computePatchAtRandom(self, Image):
-        col_wise_total = floor(self.Image_size/self.Patch_size)
-        row_wise_total = floor(self.Image_size/self.Patch_size)
-        total_possible_patches = int(col_wise_total * row_wise_total)
-        rand_patch_id = randint(0,total_possible_patches-1)#-1 since we assume from 0
-        row = int(self.Patch_size * floor(rand_patch_id/col_wise_total))
-        col = int(self.Patch_size * (rand_patch_id % col_wise_total))
+        rand_patch_id = randint(0,self.total_possible_patches-1)#-1 since we assume from 0
+        row = int(self.Patch_size * floor(rand_patch_id/self.col_wise_total))
+        col = int(self.Patch_size * (rand_patch_id % self.col_wise_total))
         patch = Image[row:(row+self.Patch_size),col:(col+self.Patch_size),:].flatten()#Check this, may change based on the shape of given array. reshape if needed as reshape(PATCH_SIZE,PATCH_SIZE,3)
         return patch
+    
+    def GeneratePatches(self):
+        for i in xrange(self.num_of_rand_patches):
+            Image = self.chooseRandomImage()
+            patch = self.computePatchAtRandom(Image)
+            self.patch_set = np.vstack((self.patch_set,patch))#input data set whose type is a list
+        return self.patch_set
+    
+    def computeKMeans(self):
+        centroids, labels = scipy.cluster.vq.kmeans(self.patch_set,self.KMeans,1)
+        return centroids
+    
+    def whittenMeans(self):
+        #data = scipy.cluster.vq.whiten(self.patch_set)
+#         X=self.patch_set.T                                          #For PCA, data should be in dimXno. of samples
+#         X = X-np.mean(X,axis=0)                                     #Data to Zero mean
+#         Xcov=np.dot(X,X.T)                                          #Covariance Matrix
+#         print 'covar'
+#         val,vec=np.linalg.eig(Xcov)                                #PCA decomposition
+#         print 'decompose'
+#         Xcov  = np.dot(vec.T , X)                                   
+#         eig = np.diag(val)                                          #Diagonalize the matrix
+#         L = np.linalg.inv(scipy.linalg.sqrtm(eig))                  #find eigenval**-0.5
+#         print 'invert'
+#         Xcov = np.dot(L,Xcov)
+#         Xcov = np.dot(vec,Xcov)
+        Xcov = 0
+        pca = PCA(whiten=True)
+        transformed = pca.fit_transform(self.patch_set.T)
+        centroids, labels = scipy.cluster.vq.kmeans(np.real(transformed.T),self.KMeans,1)   #K-means on this Whittened data
+        return np.real(centroids)
+        

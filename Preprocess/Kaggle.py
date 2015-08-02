@@ -6,10 +6,12 @@ Created on Jul 26, 2015
 import numpy as np
 from random import randint
 import scipy.misc
+from scipy import linalg
 from Globals import *
 from math import floor
 import scipy.cluster
 from sklearn.decomposition import PCA
+from sklearn import cluster
 from Preprocess import Image_Analyser as IA
 
 class Kaggle(IA.Image_Analyser):
@@ -81,9 +83,10 @@ class Kaggle(IA.Image_Analyser):
     def computeKMeans(self):
         """Computes K means Clustering and returns the K centroids"""
         
-        centroids, labels = scipy.cluster.vq.kmeans(self.patch_set,self.KMeans,self.Kmeans_iterations)
-        for i in xrange(centroids.shape[0]):                                                #Save these means as images to visualize (also enlarge for better visualiztion)      
-            scipy.misc.imsave('Kaggle/Kmean/name'+str(i)+'.jpg', scipy.misc.imresize(centroids[i].reshape(PATCH_SIZE,PATCH_SIZE,3),(50,50)))
+        #centroids, labels = scipy.cluster.vq.kmeans(self.patch_set,self.KMeans,self.Kmeans_iterations)
+        centroids, labels, error = cluster.k_means(self.patch_set,self.KMeans)
+        for i in xrange(centroids.shape[0]):                                                #Save these means as images to visualize (also enlarge for better visualiztion)     
+            scipy.misc.imsave('Kaggle/Kmean/name'+str(i)+'.jpg', scipy.misc.imresize(centroids[i].reshape(self.Patch_size,self.Patch_size,3),(50,50)))
             
         return None
     
@@ -94,25 +97,41 @@ class Kaggle(IA.Image_Analyser):
         pca_Obj = PCA(whiten=True)                                                              #Initialise the skLearn PCA decomposer for whittening the data           
         #transformed_patch_set = pca_Obj.fit_transform(self.patch_set.T)
         transformed_patch_set = self.WhittenByPCA()
-        centroids, labels = scipy.cluster.vq.kmeans(np.real(transformed_patch_set.T),self.KMeans,self.Kmeans_iterations)   #K-means on this Whittened data
+        #centroids, labels = scipy.cluster.vq.kmeans(np.real(transformed_patch_set.T),self.KMeans,self.Kmeans_iterations)   #K-means on this Whittened data
+        centroids, labels, error = cluster.k_means(np.real(transformed_patch_set.T),self.KMeans)
         for i in xrange(centroids.shape[0]):
-            scipy.misc.imsave('Kaggle/Whitten/name'+str(i)+'.jpg', scipy.misc.imresize(centroids[i].reshape(PATCH_SIZE,PATCH_SIZE,3),(50,50)))
+            scipy.misc.imsave('Kaggle/Whitten/name'+str(i)+'.jpg', scipy.misc.imresize(centroids[i].reshape(self.Patch_size,self.Patch_size,3),(50,50)))
         print 'Computed and Saved the means'
         
         return None
     
     
+    
     def WhittenByPCA(self):
-        X = self.patch_set - np.mean(self.patch_set,axis=0)                                          
+        """Using PCA"""
+        X = self.patch_set - np.mean(self.patch_set,axis=0)                                  
         X = X.T                                   
         Xcov=np.dot(X,X.T)                                          #Covariance Matrix
         print 'covar'
         val,vec=np.linalg.eigh(Xcov)                                #PCA decomposition
         print 'decompose'
-        X  = np.dot(vec.T , X)                                   
-        eig = np.diag(val)                                          #Diagonalize the matrix
-        L = scipy.linalg.sqrtm(np.linalg.inv(eig))                  #find eigenval**-0.5
+        X  = np.dot(vec.T , X)                
+        L = np.linalg.inv(linalg.sqrtm(np.diag(val))) 
         print 'invert'
         X = np.dot(L,X)
-        X = np.dot(vec,X)
+        #X = np.dot(vec,X)
+        return X
+    
+    def Whitte(self):
+        """Using SVD"""
+        X = self.patch_set - np.mean(self.patch_set,axis=0)                             
+        X = X.T
+        #print X.shape
+        U, S, V = linalg.svd(X,full_matrices=False)
+        #print U.shape,V.shape
+        X = np.dot(U.T,X)
+        L = np.linalg.inv(np.diag(S))
+        X = np.dot(L,X)
+        #X = np.dot(U,X)
+        
         return X

@@ -11,6 +11,7 @@ from Globals import *
 from math import floor
 import scipy.cluster
 from sklearn.decomposition import PCA
+from sklearn import cluster
 from Preprocess import Image_Analyser as IA
 
 from scipy import linalg
@@ -86,7 +87,9 @@ class CIFAR(IA.Image_Analyser):
     def computeKMeans(self):
         """Computes K means Clustering and returns the K centroids"""
         
-        centroids, labels = scipy.cluster.vq.kmeans(self.patch_set,self.KMeans,self.Kmeans_iterations) #Compute Kmeans on the set of patches
+        #centroids, labels = scipy.cluster.vq.kmeans(self.patch_set,self.KMeans,self.Kmeans_iterations) #Compute Kmeans on the set of patches
+        centroids = cluster.k_means(self.patch_set,self.KMeans)
+        centroids = centroids[0]
         for i in xrange(centroids.shape[0]):                                                           #Save these means as images to visualize (also enlarge for better visualiztion)
             scipy.misc.imsave('CIFAR/Kmean/name'+str(i)+'.jpg', scipy.misc.imresize(centroids[i].reshape(3,PATCH_SIZE,PATCH_SIZE),(50,50)))
             
@@ -96,11 +99,13 @@ class CIFAR(IA.Image_Analyser):
     def whittenMeans(self):
         """Whittens the data and Computes K means Clustering and returns the K centroids"""
         
-        pca_Obj = PCA(whiten=True)                                                              #Initialise the skLearn PCA decomposer for whittening the data           
-        transformed_patch_set = pca_Obj.fit_transform(self.patch_set.T)
+        #pca_Obj = PCA(whiten=True)                                                              #Initialise the skLearn PCA decomposer for whittening the data           
+        #transformed_patch_set = pca_Obj.fit_transform(self.patch_set.T)
         #transformed_patch_set = pca_Obj.inverse_transform(transformed_patch_set)
-        #transformed_patch_set = self.WhittenByPCA()
-        centroids, labels = scipy.cluster.vq.kmeans(np.real(transformed_patch_set.T),self.KMeans,self.Kmeans_iterations)   #K-means on this Whittened data
+        transformed_patch_set = self.WhittenByPCA()
+        #centroids, labels = scipy.cluster.vq.kmeans(np.real(transformed_patch_set.T),self.KMeans,self.Kmeans_iterations)   #K-means on this Whittened data
+        centroids = cluster.k_means(np.real(transformed_patch_set.T),self.KMeans)
+        centroids = centroids[0]
         for i in xrange(centroids.shape[0]):
             scipy.misc.imsave('CIFAR/Whitten/name'+str(i)+'.jpg', scipy.misc.imresize(centroids[i].reshape(3,PATCH_SIZE,PATCH_SIZE),(50,50)))
         print 'Computed and Saved the means'
@@ -108,25 +113,30 @@ class CIFAR(IA.Image_Analyser):
         return None
     
     def WhittenByPCA(self):
-        X = self.patch_set - np.mean(self.patch_set,axis=0)                                          
+        """Using PCA"""
+        X = self.patch_set - np.mean(self.patch_set,axis=0)                                  
         X = X.T                                   
         Xcov=np.dot(X,X.T)                                          #Covariance Matrix
         print 'covar'
         val,vec=np.linalg.eigh(Xcov)                                #PCA decomposition
         print 'decompose'
-        X  = np.dot(vec.T , X)                            
-        L = 1./scipy.linalg.sqrtm(np.diag(val))       
-        #eig = np.diag(val)                                          #Diagonalize the matrix
-        #L = scipy.linalg.sqrtm(np.linalg.inv(eig))                  #find eigenval**-0.5
-        #assert 0,L.shape
+        X  = np.dot(vec.T , X)                
+        L = np.linalg.inv(linalg.sqrtm(np.diag(val))) 
         print 'invert'
         X = np.dot(L,X)
         #X = np.dot(vec,X)
         return X
     
-    def white(self,X):
-        X = X - np.mean(X, axis=0)
-        U, S, V = linalg.svd(np.dot(X,X.T))
-        #U *= np.sqrt(X.shape[0])
-        print U.shape,X.shape,V.shape
-        return U*V
+    def Whitte(self):
+        """Using SVD"""
+        X = self.patch_set - np.mean(self.patch_set,axis=0)                             
+        X = X.T
+        print X.shape
+        U, S, V = linalg.svd(X,full_matrices=False)
+        print U.shape,V.shape
+        X = np.dot(U.T,X)
+        L = np.linalg.inv(np.diag(S))
+        X = np.dot(L,X)
+        #X = np.dot(U,X)
+        
+        return X

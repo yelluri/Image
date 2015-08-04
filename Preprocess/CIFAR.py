@@ -15,8 +15,7 @@ from sklearn import cluster
 from Preprocess import Image_Analyser as IA
 
 from scipy import linalg
-from math import log
-import warnings
+
 
 
 
@@ -121,10 +120,10 @@ class CIFAR(IA.Image_Analyser):
         val,vec=np.linalg.eigh(Xcov)                                #PCA decomposition
         print 'decompose'
         X  = np.dot(vec.T , X)                
-        L = np.linalg.inv(linalg.sqrtm(np.diag(val))) 
+        L = np.linalg.inv(linalg.sqrtm(np.diag(val+0.000001))) 
         print 'invert'
         X = np.dot(L,X)
-        #X = np.dot(vec,X)
+        X = np.dot(vec,X)
         return X
     
     def Whitte(self):

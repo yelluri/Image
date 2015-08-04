@@ -34,11 +34,12 @@ import matplotlib.pyplot as plt
 
 
 t1= time.time()
-ahem = Kag.Kaggle()
+ahem = Cif.CIFAR()
 
 tt = ahem.GeneratePatches()
-print time.time() - t1
-
+print "time to generate patches is :",time.time() - t1
 cent = ahem.computeKMeans()
+print "Time to compute Kmeans ",time.time() - t1
 
 cent = ahem.whittenMeans()
+print "Time to compute Whittening and Kmeans ",time.time() - t1
